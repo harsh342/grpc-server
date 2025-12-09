@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>org.springframework.boot</groupId>
+		<artifactId>spring-boot-starter-parent</artifactId>
+		<version>4.0.0</version>
+		<relativePath/> <!-- lookup parent from repository -->
+	</parent>
+	<groupId>com.fdj</groupId>
+	<artifactId>grpc-server</artifactId>
+	<version>0.0.1-SNAPSHOT</version>
+	<name>grpc-server</name>
+	<description>Demo project for gRPC server</description>
+	<url/>
+	<licenses>
+		<license/>
+	</licenses>
+	<developers>
+		<developer/>
+	</developers>
+	<scm>
+		<connection/>
+		<developerConnection/>
+		<tag/>
+		<url/>
+	</scm>
+	<properties>
+		<java.version>21</java.version>
+		<grpc.version>1.64.0</grpc.version>
+		<protobuf.version>3.25.3</protobuf.version>
+		<protoc.version>3.25.3</protoc.version>
+	</properties>
+	<dependencies>
+		<!-- Spring Boot Starter: Provides core Spring Boot functionality including auto-configuration,
+		     dependency injection, and application context management. Essential for Spring Boot applications. -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter</artifactId>
+		</dependency>
+
+		<!-- gRPC Stub: Provides the base classes and interfaces for implementing gRPC services.
+		     Contains UserImplBase which our service implementation extends. Required for service implementation. -->
+		<dependency>
+			<groupId>io.grpc</groupId>
+			<artifactId>grpc-stub</artifactId>
+			<version>${grpc.version}</version>
+		</dependency>
+		
+		<!-- gRPC Protobuf: Provides integration between gRPC and Protocol Buffers.
+		     Enables serialization/deserialization of protobuf messages in gRPC calls. Required for message handling. -->
+		<dependency>
+			<groupId>io.grpc</groupId>
+			<artifactId>grpc-protobuf</artifactId>
+			<version>${grpc.version}</version>
+		</dependency>
+		
+		<!-- gRPC Netty Shaded: Provides the network transport layer for gRPC using Netty.
+		     This is the shaded version that includes all dependencies to avoid conflicts.
+		     Required for the gRPC server to handle network communication. -->
+		<dependency>
+			<groupId>io.grpc</groupId>
+			<artifactId>grpc-netty-shaded</artifactId>
+			<version>${grpc.version}</version>
+		</dependency>
+		
+		<!-- Protocol Buffers Java: Core library for working with Protocol Buffers in Java.
+		     Provides classes for reading, writing, and manipulating protobuf messages.
+		     Required for all protobuf operations. -->
+		<dependency>
+			<groupId>com.google.protobuf</groupId>
+			<artifactId>protobuf-java</artifactId>
+			<version>${protobuf.version}</version>
+		</dependency>
+		
+		<!-- Java Annotation API: Provides javax.annotation.Generated annotation used by generated protobuf classes.
+		     Required for Java 9+ compatibility as this package was removed from JDK.
+		     Without this, compilation fails when generated classes use @Generated annotation. -->
+		<dependency>
+			<groupId>javax.annotation</groupId>
+			<artifactId>javax.annotation-api</artifactId>
+			<version>1.3.2</version>
+		</dependency>
+
+		<!-- Spring Boot Test Starter: Provides testing dependencies including JUnit, Mockito, and Spring Test.
+		     Used for unit and integration testing. Scoped to test phase only. -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+	</dependencies>
+
+	<build>
+		<extensions>
+			<!-- OS Maven Plugin: Detects the operating system and architecture at build time.
+			     Provides properties like ${os.detected.classifier} (e.g., "osx-x86_64") which are used
+			     by protobuf-maven-plugin to download the correct protoc compiler executable for the platform.
+			     Required for cross-platform protobuf compilation. -->
+			<extension>
+				<groupId>kr.motd.maven</groupId>
+				<artifactId>os-maven-plugin</artifactId>
+				<version>1.7.1</version>
+			</extension>
+		</extensions>
+		<plugins>
+			<!-- Spring Boot Maven Plugin: Packages the application as an executable JAR/WAR file.
+			     Provides goals like spring-boot:run to run the application and spring-boot:repackage
+			     to create a fat JAR with all dependencies. Essential for Spring Boot application packaging. -->
+			<plugin>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-maven-plugin</artifactId>
+			</plugin>
+			
+			<!-- Protobuf Maven Plugin: Automatically compiles .proto files to Java classes during build.
+			     Uses protoc compiler to generate Java classes from proto definitions and gRPC service stubs.
+			     This plugin:
+			     - Compiles proto files to Java message classes (UserRequest, UserResponse, etc.)
+			     - Generates gRPC service interfaces and base classes (UserGrpc.UserImplBase)
+			     - Downloads platform-specific protoc compiler automatically
+			     - Runs during compile phase to ensure generated classes are available for compilation -->
+			<plugin>
+				<groupId>org.xolstice.maven.plugins</groupId>
+				<artifactId>protobuf-maven-plugin</artifactId>
+				<version>0.6.1</version>
+				<configuration>
+					<!-- Protoc compiler artifact: Downloads the Protocol Buffer compiler executable
+					     for the detected OS/architecture. Used to parse and compile .proto files. -->
+					<protocArtifact>com.google.protobuf:protoc:${protoc.version}:exe:${os.detected.classifier}</protocArtifact>
+					<!-- gRPC Java plugin: Generates gRPC-specific Java code (service stubs, etc.)
+					     from proto service definitions. -->
+					<pluginId>grpc-java</pluginId>
+					<pluginArtifact>io.grpc:protoc-gen-grpc-java:${grpc.version}:exe:${os.detected.classifier}</pluginArtifact>
+					<!-- Location of .proto source files -->
+					<protoSourceRoot>${project.basedir}/src/main/resources/proto</protoSourceRoot>
+					<!-- Output directory for generated Java classes -->
+					<outputDirectory>${project.build.directory}/generated-sources/protobuf/java</outputDirectory>
+					<clearOutputDirectory>false</clearOutputDirectory>
+				</configuration>
+				<executions>
+					<execution>
+						<goals>
+							<!-- compile: Generates Java classes from proto messages -->
+							<goal>compile</goal>
+							<!-- compile-custom: Generates gRPC service stubs using the gRPC plugin -->
+							<goal>compile-custom</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+			
+			<!-- Build Helper Maven Plugin: Adds generated source directories to the Maven build path.
+			     Makes the protobuf-generated classes visible to the Java compiler and IDE.
+			     Without this, the generated classes in target/generated-sources would not be compiled
+			     or recognized by IDEs. Ensures generated proto classes are part of the build.
+			     Version is managed by Spring Boot parent POM. -->
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>build-helper-maven-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>add-sources</id>
+						<phase>generate-sources</phase>
+						<goals>
+							<goal>add-source</goal>
+						</goals>
+						<configuration>
+							<sources>
+								<!-- Adds the protobuf-generated Java classes directory to compilation sources -->
+								<source>${project.build.directory}/generated-sources/protobuf/java</source>
+							</sources>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+		</plugins>
+	</build>
+
+</project>
